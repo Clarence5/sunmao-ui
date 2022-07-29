@@ -20,8 +20,7 @@ export type ImplWrapperProps<
   isInModule: boolean;
   app: RuntimeApplication;
   evalListItem?: boolean;
-  slotProps?: unknown;
-  slotContext?: { renderSet: Set<string>; fallback?: React.ReactNode };
+  slotContext?: { renderSet: Set<string>; slotKey?: string };
 } & ComponentParamsFromApp;
 
 export type ComponentImplProps<
@@ -73,7 +72,8 @@ type MergeState<T> = (partialState: Partial<T>) => void;
 export type SlotsElements<U extends Record<string, SlotSpec>> = {
   [K in keyof U]?: (
     props: Static<U[K]['slotProps']>,
-    fallback?: React.ReactNode
+    fallback?: React.ReactNode,
+    key?: string
   ) => React.ReactNode;
 };
 
