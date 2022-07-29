@@ -21,14 +21,14 @@ export const generateCallback = (
   rawHandlers: string | PropsBeforeEvaled<Static<typeof CallbackSpec>>,
   index: number,
   services: UIServices,
-  slotProps?: unknown,
+  slotKey: string,
   evalListItem?: boolean
 ) => {
   const { stateManager } = services;
   const send = () => {
     // Eval before sending event to assure the handler object is evaled from the latest state.
     const evalOptions = {
-      scopeObject: { $slot: slotProps },
+      slotKey,
       evalListItem,
     };
     const evaledHandlers =
@@ -76,7 +76,7 @@ export default implementRuntimeTrait({
     state: {},
   },
 })(() => {
-  return ({ trait, handlers, services, slotProps, evalListItem }) => {
+  return ({ trait, handlers, services, evalListItem, slotKey }) => {
     const callbackQueueMap: Record<string, Array<() => void>> = {};
     const rawHandlers = trait.properties.handlers;
     // setup current handlers
@@ -87,14 +87,7 @@ export default implementRuntimeTrait({
         callbackQueueMap[handler.type] = [];
       }
       callbackQueueMap[handler.type].push(
-        generateCallback(
-          handler,
-          rawHandlers,
-          Number(i),
-          services,
-          slotProps,
-          evalListItem
-        )
+        generateCallback(handler, rawHandlers, Number(i), services, slotKey, evalListItem)
       );
     }
 

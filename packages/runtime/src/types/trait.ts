@@ -21,7 +21,7 @@ export type TraitImpl<TProperties = any> = (
       componentId: string;
       services: UIServices;
       evalListItem?: boolean;
-      slotProps?: unknown;
+      slotKey: string;
     }
 ) => TraitResult<string, string>;
 
