@@ -27,6 +27,7 @@ type EvalOptions = {
   overrideScope?: boolean;
   fallbackWhenError?: (exp: string) => any;
   ignoreEvalError?: boolean;
+  slotKey?: string;
 };
 
 // TODO: use web worker
@@ -46,6 +47,7 @@ export type StateManagerInterface = InstanceType<typeof StateManager>;
 
 export class StateManager {
   store = reactive<Record<string, any>>({});
+  slotStore = reactive<Record<string, any>>({});
 
   dependencies: Record<string, unknown>;
 
@@ -161,11 +163,24 @@ export class StateManager {
     obj: T,
     options: EvalOptions = {}
   ): PropsAfterEvaled<T> {
+    const store = this.slotStore;
+    const redirector = new Proxy(
+      {},
+      {
+        get(_, prop) {
+          return options.slotKey ? store[options.slotKey][prop] : undefined;
+        },
+      }
+    );
     // just eval
     const evaluated = this.mapValuesDeep(obj, ({ value }) => {
       if (typeof value !== 'string') {
         return value;
       }
+      options.scopeObject = {
+        ...options.scopeObject,
+        $slot: redirector,
+      };
       return this.maskedEval(value, options);
     });
 
@@ -182,6 +197,15 @@ export class StateManager {
     // just eval
     const evaluated = this.deepEval(obj, options);
 
+    const store = this.slotStore;
+    const redirector = new Proxy(
+      {},
+      {
+        get(_, prop) {
+          return options.slotKey ? store[options.slotKey][prop] : undefined;
+        },
+      }
+    );
     // watch change
     let resultCache: PropsAfterEvaled<T> = evaluated;
     this.mapValuesDeep(obj, ({ value, path }) => {
@@ -193,6 +217,10 @@ export class StateManager {
 
       const stop = watch(
         () => {
+          options.scopeObject = {
+            ...options.scopeObject,
+            $slot: redirector,
+          };
           const result = this.maskedEval(value as string, options);
 
           return result;
@@ -205,6 +233,9 @@ export class StateManager {
             set(draft, path, newV);
           });
           watcher({ result: resultCache });
+        },
+        {
+          deep: true,
         }
       );
       stops.push(stop);
